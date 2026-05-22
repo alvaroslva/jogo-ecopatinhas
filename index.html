@@ -1655,6 +1655,37 @@ function update(dt) {
 document.addEventListener('pointerdown', () => { audio.init(); audio.resume(); audio.startMenuMusic(); }, { once: true });
 document.addEventListener('keydown', () => { audio.init(); audio.resume(); audio.startMenuMusic(); }, { once: true });
 
+// ─── EVENT WIRING ────────────────────────────────────────────────────────────
+$('startBtn').addEventListener('click', startGame);
+$('pauseBtn').addEventListener('click', pauseGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+$('backMenuBtn').addEventListener('click', goMenu);
+$('nextLevelBtn').addEventListener('click', nextLevel);
+$('menuAfterLevelBtn').addEventListener('click', goMenu);
+$('retryBtn').addEventListener('click', startGame);
+$('menuAfterGameOverBtn').addEventListener('click', goMenu);
+$('shopBtn').addEventListener('click', () => { updateShop(); showScreen('shop'); });
+$('closeShopBtn').addEventListener('click', () => showScreen('menu'));
+$('buyBagBtn').addEventListener('click', () => buy('bag'));
+$('buySpeedBtn').addEventListener('click', () => buy('speed'));
+$('buySkinBtn').addEventListener('click', () => buy('skin'));
+$('muteBtn').addEventListener('click', () => { audio.init(); audio.resume(); audio.toggleMute(); });
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('Zerar moedas, fases e melhorias?')) return;
+  ['ecopatinhas_level','ecopatinhas_coins','ecopatinhas_bag','ecopatinhas_speed','ecopatinhas_skin','ecopatinhas_total'].forEach(k => localStorage.removeItem(k));
+  state.levelIndex=0; state.bankCoins=0; state.bagUpgrade=0; state.speedUpgrade=0; state.specialSkin=false; state.communityTotal=0;
+  updateHud(); updateShop(); toast('Progresso zerado.');
+});
+document.querySelectorAll('.theme-card').forEach(card => card.addEventListener('click', () => applyTheme(card.dataset.theme)));
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+applyTheme(state.theme);
+resizeCanvas();
+updateCamera();
+buildLevel();
+updateShop();
+requestAnimationFrame(loop);
+
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -1847,7 +1878,6 @@ document.addEventListener('keydown', () => { audio.init(); audio.resume(); audio
     await signOut(auth);
     toast('Até logo! 👋');
   });
-</script>
 </script>
 </body>
 </html>
