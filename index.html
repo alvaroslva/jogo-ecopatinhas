@@ -41,6 +41,19 @@
   </div>
 </div>
 
+<!-- MODAL: confirmar zerar progresso -->
+<div id="confirmResetModal" style="display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);">
+  <div style="background:white;border-radius:24px;padding:28px 24px;width:min(340px,100%);box-shadow:0 24px 70px rgba(0,0,0,.22);text-align:center;">
+    <div style="font-size:36px;margin-bottom:10px;">⚠️</div>
+    <h3 style="font-size:18px;margin:0 0 8px;">Zerar progresso?</h3>
+    <p style="color:#5f7369;font-size:14px;margin:0 0 22px;">Moedas, fases e melhorias serão apagados. Essa ação não pode ser desfeita.</p>
+    <div style="display:flex;gap:10px;">
+      <button id="confirmResetNo"  style="flex:1;background:rgba(0,0,0,.07);color:#183127;box-shadow:none;border:1px solid rgba(0,0,0,.08);">Cancelar</button>
+      <button id="confirmResetYes" style="flex:1;background:linear-gradient(135deg,#e25b5b,#b03535);">Sim, zerar</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
   <div id="gameShell">
     <canvas id="game" aria-label="Jogo EcoPatinhas"></canvas>
@@ -58,6 +71,18 @@
         <div class="pill">⏱️ <span id="timeText">90</span>s</div>
         <button class="secondary" id="muteBtn" style="pointer-events:auto;padding:7px 10px;font-size:14px;" title="Mutar/desmutar áudio">🔊</button>
         <button class="secondary" id="pauseBtn" style="pointer-events:auto;padding:7px 12px;font-size:12px;">Pausar</button>
+        <div id="userChip" style="display:none;pointer-events:auto;position:relative;">
+          <button id="userChipBtn" class="secondary" style="display:flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border-radius:999px;font-size:12px;font-weight:800;max-width:150px;">
+            <span id="userAvatar" style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:grid;place-items:center;font-size:12px;color:white;flex-shrink:0;">?</span>
+            <span id="userChipName" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px;"></span>
+            <span style="color:var(--muted);font-size:10px;margin-left:2px;">▾</span>
+          </button>
+          <!-- dropdown -->
+          <div id="userDropdown" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:white;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.16);border:1px solid rgba(0,0,0,.07);min-width:170px;overflow:hidden;z-index:50;">
+            <button id="dropResetBtn" style="width:100%;text-align:left;padding:11px 14px;border-radius:0;background:none;color:var(--text);box-shadow:none;font-size:13px;border-bottom:1px solid rgba(0,0,0,.06);">🗑️ Zerar progresso</button>
+            <button id="dropLogoutBtn" style="width:100%;text-align:left;padding:11px 14px;border-radius:0;background:none;color:#e25b5b;box-shadow:none;font-size:13px;">🚪 Sair da conta</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -114,8 +139,6 @@
         <div class="button-row">
           <button id="startBtn">Começar jogo</button>
           <button class="secondary" id="shopBtn">Loja e melhorias</button>
-          <button class="secondary" id="resetBtn">Zerar progresso</button>
-          <button class="secondary" id="logoutBtn">Sair da conta</button>
         </div>
       </div>
     </div>
