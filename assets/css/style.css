@@ -385,3 +385,13 @@
       .hud { top: 6px; }
       .pill { min-height: 26px; font-size: 10px; padding: 4px 8px; }
     }
+
+    /* ── USER CHIP DROPDOWN ── */
+    #userDropdown button:hover {
+      background: rgba(0,0,0,.04) !important;
+      transform: none;
+    }
+    #dropLogoutBtn:hover {
+      background: rgba(226,91,91,.07) !important;
+    }
+    /* fechar dropdown clicando fora — handled via JS */
