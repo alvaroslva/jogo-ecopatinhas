@@ -2,7 +2,8 @@ import { initializeApp }                          from 'https://www.gstatic.com/
   import { getAuth, createUserWithEmailAndPassword,
            signInWithEmailAndPassword, signOut,
            onAuthStateChanged }                     from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc }      from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
+  import { getFirestore, doc, getDoc, setDoc,
+           collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 
   // ── Config do seu projeto ──
   const firebaseConfig = {
@@ -165,12 +166,45 @@ import { initializeApp }                          from 'https://www.gstatic.com/
       // Esconde tela de login, mostra o jogo
       loginScreen.classList.add('hidden');
 
-      // ── Mostra chip de usuário com nickname ──
-      const chipName  = state.nickname || user.email.split('@')[0];
-      const initials  = chipName.slice(0,1).toUpperCase();
-      document.getElementById('userChipName').textContent = chipName;
-      document.getElementById('userAvatar').textContent   = initials;
-      document.getElementById('userChip').style.display   = 'block';
+      // ── Avatar dropdown ──
+      const epAvatar   = document.getElementById('ep-user-avatar');
+      const epAvatarBtn = document.getElementById('ep-avatar-btn');
+      const epAvatarName = document.getElementById('ep-avatar-name');
+      const epDname    = document.getElementById('ep-dname');
+      const epDemail   = document.getElementById('ep-demail');
+      const epDropdown = document.getElementById('ep-dropdown');
+      const epChevron  = document.getElementById('ep-chevron');
+      const epResetBtn = document.getElementById('ep-reset-btn');
+      const epLogoutBtn = document.getElementById('ep-logout-btn');
+
+      const displayName = state.nickname || user.email.split('@')[0];
+      epAvatarName.textContent = displayName;
+      epDname.textContent = displayName;
+      epDemail.textContent = user.email;
+      epAvatar.classList.add('ep-visible');
+
+      epAvatarBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = epDropdown.classList.toggle('ep-open');
+        epChevron.classList.toggle('ep-open', isOpen);
+        epAvatarBtn.setAttribute('aria-expanded', String(isOpen));
+      });
+      document.addEventListener('click', () => {
+        epDropdown.classList.remove('ep-open');
+        epChevron.classList.remove('ep-open');
+        epAvatarBtn.setAttribute('aria-expanded', 'false');
+      });
+
+      epResetBtn.addEventListener('click', () => {
+        epDropdown.classList.remove('ep-open');
+        epChevron.classList.remove('ep-open');
+        document.getElementById('resetBtn').click();
+      });
+      epLogoutBtn.addEventListener('click', () => {
+        epDropdown.classList.remove('ep-open');
+        epChevron.classList.remove('ep-open');
+        document.getElementById('logoutBtn').click();
+      });
 
       // Sobreescreve saveProgress pra salvar no Firebase também
       window._fbSaveProgress = () => fbSaveProgress(user.uid);
@@ -182,12 +216,55 @@ import { initializeApp }                          from 'https://www.gstatic.com/
     } else {
       // ❌ Não logado — mostra tela de login
       currentUid = null;
-      document.getElementById('userChip').style.display = 'none';
-      document.getElementById('userDropdown').style.display = 'none';
       loginScreen.classList.remove('hidden');
       submitBtn.disabled = false;
       loadingMsg.classList.add('hidden');
+      const epAvatar = document.getElementById('ep-user-avatar');
+      if (epAvatar) epAvatar.classList.remove('ep-visible');
     }
+  });
+
+  // ── Ranking ──
+  async function fbLoadRanking() {
+    try {
+      const q = query(collection(db, 'usuarios'), orderBy('bankCoins', 'desc'), limit(10));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ uid: d.id, nickname: d.data().nickname || '---', bankCoins: d.data().bankCoins || 0 }));
+    } catch (e) {
+      console.error('Erro ranking (verifique índice Firestore):', e);
+      return [];
+    }
+  }
+
+  function ep_renderRanking(rows, myUid) {
+    const tbody = document.getElementById('ep-rank-tbody');
+    if (!tbody) return;
+    const medals = ['🥇','🥈','🥉'];
+    const filled = rows.slice(0, 10);
+    while (filled.length < 5) filled.push(null);
+    tbody.innerHTML = filled.map((r, i) => {
+      const pos = medals[i] || `${i + 1}º`;
+      const isMe = r && r.uid === myUid;
+      const name = r ? r.nickname : '—';
+      const score = r ? r.bankCoins.toLocaleString('pt-BR') : '—';
+      return `<tr class="${isMe ? 'ep-rank-me' : ''}">
+        <td class="ep-rank-pos">${pos}</td>
+        <td class="ep-rank-name">${name}${isMe ? ' <span class="ep-rank-you">você</span>' : ''}</td>
+        <td class="ep-rank-score">${score}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('ep-rank-btn').addEventListener('click', async () => {
+    document.getElementById('ep-rank-overlay').style.display = 'flex';
+    document.getElementById('ep-rank-loading').style.display = 'block';
+    document.getElementById('ep-rank-tbody').innerHTML = '';
+    const rows = await fbLoadRanking();
+    document.getElementById('ep-rank-loading').style.display = 'none';
+    ep_renderRanking(rows, currentUid);
+  });
+  document.getElementById('ep-rank-close').addEventListener('click', () => {
+    document.getElementById('ep-rank-overlay').style.display = 'none';
   });
 
   // Patch do saveProgress — injeta salvamento no Firebase em cima do original
@@ -197,50 +274,9 @@ import { initializeApp }                          from 'https://www.gstatic.com/
     if (currentUid) fbSaveProgress(currentUid);
   };
 
-  // ── Chip: abrir/fechar dropdown ──
-  const userChipBtn  = document.getElementById('userChipBtn');
-  const userDropdown = document.getElementById('userDropdown');
-
-  userChipBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const open = userDropdown.style.display === 'block';
-    userDropdown.style.display = open ? 'none' : 'block';
-  });
-
-  // Fecha dropdown ao clicar fora
-  document.addEventListener('click', () => {
-    userDropdown.style.display = 'none';
-  });
-  userDropdown.addEventListener('click', (e) => e.stopPropagation());
-
-  // ── Sair da conta (dropdown) ──
-  document.getElementById('dropLogoutBtn').addEventListener('click', async () => {
-    userDropdown.style.display = 'none';
+  // ── Botão de logout ──
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
     if (!confirm('Sair da conta?')) return;
     await signOut(auth);
     toast('Até logo! 👋');
-  });
-
-  // ── Zerar progresso (dropdown → modal) ──
-  const confirmModal = document.getElementById('confirmResetModal');
-
-  document.getElementById('dropResetBtn').addEventListener('click', () => {
-    userDropdown.style.display = 'none';
-    confirmModal.style.display = 'flex';
-  });
-
-  document.getElementById('confirmResetNo').addEventListener('click', () => {
-    confirmModal.style.display = 'none';
-  });
-
-  document.getElementById('confirmResetYes').addEventListener('click', () => {
-    confirmModal.style.display = 'none';
-    ['ecopatinhas_level','ecopatinhas_coins','ecopatinhas_bag',
-     'ecopatinhas_speed','ecopatinhas_skin','ecopatinhas_total'].forEach(k => localStorage.removeItem(k));
-    state.levelIndex = 0; state.bankCoins = 0; state.bagUpgrade = 0;
-    state.speedUpgrade = 0; state.specialSkin = false; state.communityTotal = 0;
-    // Sincroniza no Firestore sem apagar nickname
-    if (currentUid) fbSaveProgress(currentUid);
-    updateHud(); updateShop();
-    toast('Progresso zerado.');
   });
