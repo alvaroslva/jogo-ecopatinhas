@@ -165,6 +165,13 @@ import { initializeApp }                          from 'https://www.gstatic.com/
       // Esconde tela de login, mostra o jogo
       loginScreen.classList.add('hidden');
 
+      // ── Mostra chip de usuário com nickname ──
+      const chipName  = state.nickname || user.email.split('@')[0];
+      const initials  = chipName.slice(0,1).toUpperCase();
+      document.getElementById('userChipName').textContent = chipName;
+      document.getElementById('userAvatar').textContent   = initials;
+      document.getElementById('userChip').style.display   = 'block';
+
       // Sobreescreve saveProgress pra salvar no Firebase também
       window._fbSaveProgress = () => fbSaveProgress(user.uid);
       const _origSave = window.saveProgress || (() => {});
@@ -175,6 +182,8 @@ import { initializeApp }                          from 'https://www.gstatic.com/
     } else {
       // ❌ Não logado — mostra tela de login
       currentUid = null;
+      document.getElementById('userChip').style.display = 'none';
+      document.getElementById('userDropdown').style.display = 'none';
       loginScreen.classList.remove('hidden');
       submitBtn.disabled = false;
       loadingMsg.classList.add('hidden');
@@ -188,9 +197,50 @@ import { initializeApp }                          from 'https://www.gstatic.com/
     if (currentUid) fbSaveProgress(currentUid);
   };
 
-  // ── Botão de logout ──
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
+  // ── Chip: abrir/fechar dropdown ──
+  const userChipBtn  = document.getElementById('userChipBtn');
+  const userDropdown = document.getElementById('userDropdown');
+
+  userChipBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = userDropdown.style.display === 'block';
+    userDropdown.style.display = open ? 'none' : 'block';
+  });
+
+  // Fecha dropdown ao clicar fora
+  document.addEventListener('click', () => {
+    userDropdown.style.display = 'none';
+  });
+  userDropdown.addEventListener('click', (e) => e.stopPropagation());
+
+  // ── Sair da conta (dropdown) ──
+  document.getElementById('dropLogoutBtn').addEventListener('click', async () => {
+    userDropdown.style.display = 'none';
     if (!confirm('Sair da conta?')) return;
     await signOut(auth);
     toast('Até logo! 👋');
+  });
+
+  // ── Zerar progresso (dropdown → modal) ──
+  const confirmModal = document.getElementById('confirmResetModal');
+
+  document.getElementById('dropResetBtn').addEventListener('click', () => {
+    userDropdown.style.display = 'none';
+    confirmModal.style.display = 'flex';
+  });
+
+  document.getElementById('confirmResetNo').addEventListener('click', () => {
+    confirmModal.style.display = 'none';
+  });
+
+  document.getElementById('confirmResetYes').addEventListener('click', () => {
+    confirmModal.style.display = 'none';
+    ['ecopatinhas_level','ecopatinhas_coins','ecopatinhas_bag',
+     'ecopatinhas_speed','ecopatinhas_skin','ecopatinhas_total'].forEach(k => localStorage.removeItem(k));
+    state.levelIndex = 0; state.bankCoins = 0; state.bagUpgrade = 0;
+    state.speedUpgrade = 0; state.specialSkin = false; state.communityTotal = 0;
+    // Sincroniza no Firestore sem apagar nickname
+    if (currentUid) fbSaveProgress(currentUid);
+    updateHud(); updateShop();
+    toast('Progresso zerado.');
   });
